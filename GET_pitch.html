@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GET — Guarden Este Tweet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  .gw { font-family: 'Syne', sans-serif; background: #0a0a0a; color: #f0ede6; min-height: 100vh; }
+  .screen { display: none; min-height: 100vh; flex-direction: column; justify-content: center; padding: 60px 56px; animation: fadeIn 0.5s ease; }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .label { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:0.12em; color:#555; text-transform:uppercase; margin-bottom:22px; }
+  .ronda-tag { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.15em; color:#c8f060; margin-bottom:18px; text-transform:uppercase; }
+  .accent { width:44px; height:2px; background:#c8f060; margin-bottom:32px; }
+  h1.hero { font-family:'DM Serif Display',serif; font-size:clamp(64px,12vw,110px); line-height:0.92; color:#f0ede6; font-weight:400; margin-bottom:10px; }
+  h1.hero em { font-style:italic; color:#c8f060; }
+  .sub { font-family:'DM Mono',monospace; font-size:13px; color:#555; letter-spacing:0.06em; margin-bottom:48px; }
+  .body { font-size:17px; line-height:1.75; color:#999; max-width:580px; margin-bottom:26px; }
+  .body strong { color:#f0ede6; font-weight:700; }
+  .q-text { font-family:'DM Serif Display',serif; font-size:clamp(22px,3.5vw,30px); line-height:1.3; color:#f0ede6; margin-bottom:28px; font-weight:400; }
+  .opts { display:flex; flex-direction:column; gap:10px; margin-bottom:32px; }
+  .opt { display:flex; align-items:flex-start; gap:14px; padding:17px 20px; border:1px solid #1e1e1e; border-radius:2px; cursor:pointer; background:transparent; text-align:left; color:#aaa; font-family:'Syne',sans-serif; font-size:15px; line-height:1.5; transition:all 0.18s; width:100%; }
+  .opt:hover { border-color:#383838; background:#0e0e0e; color:#f0ede6; }
+  .opt.selected { border-color:#c8f060; background:#0c1800; color:#f0ede6; }
+  .opt.selected .ol { background:#c8f060; color:#0a0a0a; border-color:#c8f060; }
+  .ol { font-family:'DM Mono',monospace; font-size:11px; width:22px; height:22px; border:1px solid #333; border-radius:2px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; transition:all 0.18s; color:#555; }
+  .btn { display:inline-flex; align-items:center; gap:10px; background:#c8f060; color:#0a0a0a; border:none; padding:15px 30px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; cursor:pointer; border-radius:2px; transition:all 0.18s; letter-spacing:0.04em; text-decoration:none; }
+  .btn:hover { background:#d4ff6a; transform:translateY(-1px); }
+  .btn:disabled { opacity:0.3; cursor:default; transform:none; }
+  .pbr { position:fixed; bottom:0; left:0; height:2px; background:#c8f060; transition:width 0.45s ease; z-index:100; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start; }
+  .mcard { border:1px solid #1e1e1e; padding:20px; border-radius:2px; margin-bottom:12px; }
+  .mcard.hl { border-color:#c8f060; }
+  .mn { font-family:'DM Mono',monospace; font-size:11px; color:#c8f060; margin-bottom:7px; }
+  .mt { font-size:14px; font-weight:700; color:#f0ede6; margin-bottom:6px; }
+  .md { font-size:13px; color:#666; line-height:1.5; }
+  .track-big { font-family:'DM Serif Display',serif; font-size:clamp(60px,12vw,108px); color:#c8f060; font-weight:400; line-height:1; }
+  .track-sub { font-family:'DM Mono',monospace; font-size:12px; color:#555; margin-top:4px; letter-spacing:0.08em; margin-bottom:40px; }
+  .show-row { display:grid; grid-template-columns:88px 1fr auto; gap:18px; align-items:center; padding:16px 0; border-bottom:1px solid #141414; }
+  .show-row:last-child { border-bottom:none; }
+  .show-year { font-family:'DM Mono',monospace; font-size:11px; color:#555; }
+  .show-name { font-size:14px; color:#f0ede6; font-weight:700; }
+  .show-detail { font-size:12px; color:#555; margin-top:3px; }
+  .show-pax { font-family:'DM Serif Display',serif; font-size:20px; color:#f0ede6; text-align:right; white-space:nowrap; }
+  .show-pax span { font-family:'DM Mono',monospace; font-size:10px; color:#555; display:block; text-align:right; }
+  .bar-wrap { margin-top:5px; height:2px; background:#141414; border-radius:1px; }
+  .bar-fill { height:2px; background:#c8f060; border-radius:1px; }
+  .reveal-box { border:1px solid #2a2a2a; padding:32px; border-radius:2px; background:#0c0c0c; margin-bottom:32px; }
+  .reveal-pct { font-family:'DM Serif Display',serif; font-size:clamp(56px,10vw,88px); color:#c8f060; font-weight:400; line-height:1; margin-bottom:10px; }
+  .reveal-line { font-size:16px; color:#888; line-height:1.7; max-width:520px; }
+  .reveal-line strong { color:#f0ede6; }
+  .answer-row { display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid #141414; gap:14px; }
+  .answer-q { font-size:13px; color:#555; flex:1; }
+  .atag { font-family:'DM Mono',monospace; font-size:11px; padding:4px 10px; border-radius:2px; flex-shrink:0; }
+  .aw { background:#0c1800; color:#c8f060; border:1px solid #2a4000; }
+  .al { background:#1a1a1a; color:#555; border:1px solid #2a2a2a; }
+  .phase-section { margin-bottom:32px; }
+  .phase-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#c8f060; margin-bottom:12px; padding-bottom:9px; border-bottom:1px solid #1a1a1a; }
+  .int-cards { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .int-pill { border:1px solid #1e1e1e; padding:16px 18px; border-radius:2px; cursor:pointer; transition:all 0.18s; background:transparent; text-align:left; width:100%; position:relative; }
+  .int-pill:hover { border-color:#383838; background:#0e0e0e; }
+  .int-pill.picked { border-color:#c8f060; background:#0c1800; }
+  .int-pill.picked .chk { opacity:1; }
+  .int-pill-title { font-size:13px; font-weight:700; color:#f0ede6; margin-bottom:4px; padding-right:20px; }
+  .int-pill-desc { font-size:12px; color:#555; line-height:1.4; }
+  .chk { position:absolute; top:12px; right:12px; width:17px; height:17px; background:#c8f060; border-radius:2px; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.18s; font-size:9px; color:#0a0a0a; font-weight:700; }
+  @media(max-width:700px) {
+    .screen { padding:40px 24px; }
+    .two,.int-cards { grid-template-columns:1fr; }
+    .show-row { grid-template-columns:60px 1fr auto; gap:10px; }
+    h1.hero { font-size:clamp(52px,14vw,80px); }
+    .body { font-size:15px; }
+    .opt { font-size:14px; }
+  }
+</style>
+</head>
+<body>
+<div class="gw">
+  <div class="pbr" id="pb" style="width:0%"></div>
+
+  <!-- S0 PORTADA -->
+  <div class="screen active" id="s0">
+    <div class="label">Gelatina · 2026</div>
+    <h1 class="hero">G<em>E</em>T</h1>
+    <div class="sub">Guarden Este Tweet · Teatro · Tecnología · Participación</div>
+    <div class="accent"></div>
+    <p class="body">Una experiencia escénica donde el público toma decisiones reales con plata real — <strong>sin saber que lo está haciendo.</strong></p>
+    <button class="btn" onclick="go('sr0')">Entrar al experimento →</button>
+  </div>
+
+  <!-- RONDA 0 -->
+  <div class="screen" id="sr0">
+    <div class="ronda-tag">— Ronda 0</div>
+    <div class="q-text">Tu empresa tiene presupuesto para una sola acción de marca este trimestre. ¿Qué elegís?</div>
+    <div class="opts">
+      <button class="opt" onclick="pick(this,'r0','A',false)"><span class="ol">A</span><span>Una campaña de medios tradicionales con alcance masivo y resultado previsible</span></button>
+      <button class="opt" onclick="pick(this,'r0','B',true)"><span class="ol">B</span><span>Una apuesta creativa sin precedentes, con más riesgo pero más potencial de impacto</span></button>
+    </div>
+    <button class="btn" id="br0" disabled onclick="go('s1')">Continuar →</button>
+  </div>
+
+  <!-- S1 EL PROYECTO -->
+  <div class="screen" id="s1">
+    <div class="label">El proyecto</div>
+    <div class="accent"></div>
+    <p class="q-text" style="max-width:620px;">Pedro Rosemblat vuelve al teatro.</p>
+    <p class="body">GET es un unipersonal sobre tecnología, poder y decisiones. Durante 90 minutos, Pedro recorre la historia reciente de internet: los dueños del mundo digital, el algoritmo que te predice, lo que le hicimos a nuestra atención.</p>
+    <p class="body" style="margin-top:14px;">Pero hay algo más. <strong>Mientras el show avanza, el público está jugando sin saberlo.</strong></p>
+    <button class="btn" onclick="go('s2')">La mecánica →</button>
+  </div>
+
+  <!-- S2 MECANICA -->
+  <div class="screen" id="s2">
+    <div class="label">La mecánica</div>
+    <div class="accent"></div>
+    <div class="two">
+      <div>
+        <p class="body">Antes de entrar, el público escanea un QR desde el celular. A lo largo del show hay 4 preguntas. Parecen de opinión. <strong>Son decisiones dentro de un experimento.</strong></p>
+        <p class="body" style="margin-top:14px;">Al final se revelan las reglas: había una respuesta cooperativa oculta en cada pregunta. Solo ganan los que cooperaron en las 4 rondas. El pozo — USD 5.000 en plata real — se reparte entre ellos.</p>
+        <p class="body" style="margin-top:14px;color:#555;font-style:italic;">Nadie leyó las reglas antes de jugar. Igual que con los términos y condiciones. Esa es la tesis del show.</p>
+      </div>
+      <div>
+        <div class="mcard"><div class="mn">01</div><div class="mt">Entrás al juego</div><div class="md">Escaneás un QR antes de que empiece el show</div></div>
+        <div class="mcard"><div class="mn">02</div><div class="mt">4 preguntas a lo largo del show</div><div class="md">Parecen de opinión. Nadie sabe que son el juego.</div></div>
+        <div class="mcard"><div class="mn">03</div><div class="mt">El sistema registra en silencio</div><div class="md">Quien no cooperó fue eliminado sin saberlo</div></div>
+        <div class="mcard hl"><div class="mn">04</div><div class="mt">La revelación</div><div class="md">Se revelan las reglas. El pozo se reparte en vivo.</div></div>
+      </div>
+    </div>
+    <button class="btn" onclick="go('sr2')" style="margin-top:6px;">Siguiente →</button>
+  </div>
+
+  <!-- RONDA 2 -->
+  <div class="screen" id="sr2">
+    <div class="ronda-tag">— Ronda 2</div>
+    <div class="q-text">Una campaña tuya funciona muy bien. ¿Qué hacés con los resultados?</div>
+    <div class="opts">
+      <button class="opt" onclick="pick(this,'r2','A',true)"><span class="ol">A</span><span>Los comparto con todo el equipo para que todos aprendan</span></button>
+      <button class="opt" onclick="pick(this,'r2','B',false)"><span class="ol">B</span><span>Los uso para fortalecer mi posición en la próxima reunión de presupuesto</span></button>
+      <button class="opt" onclick="pick(this,'r2','C',false)"><span class="ol">C</span><span>Los documento internamente para futuras campañas</span></button>
+      <button class="opt" onclick="pick(this,'r2','D',false)"><span class="ol">D</span><span>Espero a ver si se sostiene antes de sacar conclusiones</span></button>
+    </div>
+    <button class="btn" id="br2" disabled onclick="go('s3')">Continuar →</button>
+  </div>
+
+  <!-- S3 TRACK RECORD -->
+  <div class="screen" id="s3">
+    <div class="label">El camino</div>
+    <div class="accent"></div>
+    <div class="track-big">+67.000</div>
+    <div class="track-sub">entradas vendidas en shows en vivo · 2023–2025</div>
+    <div>
+      <div class="show-row">
+        <div><div class="show-year">2023–24</div></div>
+        <div><div class="show-name">Orcos Anónimos</div><div class="show-detail">Pedro Rosemblat + Invitados · 3 fechas · CABA y Avellaneda</div><div class="bar-wrap"><div class="bar-fill" style="width:18%"></div></div></div>
+        <div class="show-pax">4.600<span>personas</span></div>
+      </div>
+      <div class="show-row">
+        <div><div class="show-year">2024</div></div>
+        <div><div class="show-name">Sector Privado</div><div class="show-detail">Pedro Rosemblat + Ofelia Fernández · 7 fechas · CABA, Rosario, La Plata</div><div class="bar-wrap"><div class="bar-fill" style="width:34%"></div></div></div>
+        <div class="show-pax">22.200<span>personas</span></div>
+      </div>
+      <div class="show-row">
+        <div><div class="show-year">2023–25</div></div>
+        <div><div class="show-name">Festival de Jingles / Festival Gelatina</div><div class="show-detail">6 fechas · CABA, Córdoba · C Art Media → Estadio Maradona</div><div class="bar-wrap"><div class="bar-fill" style="width:100%"></div></div></div>
+        <div class="show-pax">40.800<span>personas</span></div>
+      </div>
+    </div>
+    <button class="btn" onclick="go('sr3')" style="margin-top:32px;">Siguiente →</button>
+  </div>
+
+  <!-- RONDA 3 -->
+  <div class="screen" id="sr3">
+    <div class="ronda-tag">— Ronda 3</div>
+    <div class="q-text">Estás leyendo esta presentación ahora mismo.</div>
+    <p class="body" style="margin-bottom:24px;">¿Qué estás haciendo?</p>
+    <div class="opts">
+      <button class="opt" onclick="pick(this,'r3','A',false)"><span class="ol">A</span><span>La estoy evaluando yo a ella</span></button>
+      <button class="opt" onclick="pick(this,'r3','B',true)"><span class="ol">B</span><span>Ella me está evaluando a mí</span></button>
+    </div>
+    <button class="btn" id="br3" disabled onclick="go('s4')">Continuar →</button>
+  </div>
+
+  <!-- S4 INTEGRACIONES -->
+  <div class="screen" id="s4">
+    <div class="label">Dónde puede aparecer tu marca</div>
+    <div class="accent"></div>
+    <p class="body" style="margin-bottom:28px;">Marcá las que te interesarían explorar.</p>
+
+    <div class="phase-section">
+      <div class="phase-label">Fuera de la sala</div>
+      <div class="int-cards">
+        <button class="int-pill" onclick="toggleInt(this,'Sorteos de entradas con premios de la marca')"><div class="chk">✓</div><div class="int-pill-title">Sorteos de entradas</div><div class="int-pill-desc">Con premios de la marca incluidos para la comunidad</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Descuento en entradas y cuotas')"><div class="chk">✓</div><div class="int-pill-title">Descuento en entradas y cuotas</div><div class="int-pill-desc">Beneficio exclusivo para la comunidad de la marca</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Branded content sobre GET')"><div class="chk">✓</div><div class="int-pill-title">Branded content sobre GET</div><div class="int-pill-desc">Vlogs en ciudades, backstage, TikToks con la gente del teatro, mini documental del proceso creativo, stories en tiempo real</div></button>
+      </div>
+    </div>
+
+    <div class="phase-section">
+      <div class="phase-label">Dentro de la sala</div>
+      <div class="int-cards">
+        <button class="int-pill" onclick="toggleInt(this,'Dinámicas previas al show')"><div class="chk">✓</div><div class="int-pill-title">Dinámicas previas al show</div><div class="int-pill-desc">Juegos en pantalla, sorteos, banda en vivo brandeada</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'QR del juego brandeado')"><div class="chk">✓</div><div class="int-pill-title">QR del juego brandeado</div><div class="int-pill-desc">El código que el público escanea para entrar al experimento</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Logo en pantallas del teatro')"><div class="chk">✓</div><div class="int-pill-title">Logo en pantallas</div><div class="int-pill-desc">Branding visual mientras el público entra y se acomoda</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Presencia en la plataforma del juego')"><div class="chk">✓</div><div class="int-pill-title">Plataforma del juego</div><div class="int-pill-desc">Donde el público responde las 4 preguntas del experimento</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Integración orgánica dentro del guion')"><div class="chk">✓</div><div class="int-pill-title">Integración dentro del guion</div><div class="int-pill-desc">Presencia orgánica dentro de la narrativa del show</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Product placement en escenario')"><div class="chk">✓</div><div class="int-pill-title">Product placement</div><div class="int-pill-desc">Botellas, corpóreos y elementos de la marca en el escenario</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Regalo sumado a los USD 5.000 del premio')"><div class="chk">✓</div><div class="int-pill-title">Regalo sumado al premio</div><div class="int-pill-desc">Un producto o experiencia de la marca para los ganadores de los USD 5.000</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'El pago del premio en vivo — USD 5.000')"><div class="chk">✓</div><div class="int-pill-title">El pago del premio en vivo</div><div class="int-pill-desc">USD 5.000 transferidos frente a toda la sala — el branded moment más poderoso de la noche</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Stand en el foyer')"><div class="chk">✓</div><div class="int-pill-title">Stand en el foyer</div><div class="int-pill-desc">Presencia física antes y después del show</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Sampling en entrada o salida')"><div class="chk">✓</div><div class="int-pill-title">Sampling</div><div class="int-pill-desc">Productos en entrada o salida del teatro</div></button>
+      </div>
+    </div>
+
+    <div class="phase-section">
+      <div class="phase-label">La vida del show</div>
+      <div class="int-cards">
+        <button class="int-pill" onclick="toggleInt(this,'Réplica en redes de las dinámicas del show')"><div class="chk">✓</div><div class="int-pill-title">Réplica en redes</div><div class="int-pill-desc">Sorteos, juegos y dinámicas del show adaptados al formato digital</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'Contenido con la gente del teatro')"><div class="chk">✓</div><div class="int-pill-title">Contenido con la gente del teatro</div><div class="int-pill-desc">Reacciones, entrevistas cortas, el experimento contado por quienes lo vivieron</div></button>
+        <button class="int-pill" onclick="toggleInt(this,'TikToks y reels con el elenco de GET')"><div class="chk">✓</div><div class="int-pill-title">TikToks y reels con el elenco</div><div class="int-pill-desc">Contenido con el equipo de GET para redes de Gelatina</div></button>
+      </div>
+    </div>
+
+    <div style="height:20px;"></div>
+    <button class="btn" id="btnSig" disabled onclick="go('sr4')">Siguiente →</button>
+  </div>
+
+  <!-- RONDA 4 -->
+  <div class="screen" id="sr4">
+    <div class="ronda-tag">— Ronda 4</div>
+    <div class="q-text">Hay una marca competidora mirando este mismo proyecto. ¿Qué hacés?</div>
+    <div class="opts">
+      <button class="opt" onclick="pick(this,'r4','A',false)"><span class="ol">A</span><span>Avanzo rápido para cerrar la exclusividad antes de que lleguen</span></button>
+      <button class="opt" onclick="pick(this,'r4','B',false)"><span class="ol">B</span><span>Espero a ver qué deciden ellos antes de comprometerme</span></button>
+      <button class="opt" onclick="pick(this,'r4','C',true)"><span class="ol">C</span><span>Propongo una integración conjunta — dos marcas, más presupuesto, más impacto</span></button>
+      <button class="opt" onclick="pick(this,'r4','D',false)"><span class="ol">D</span><span>Descarto el proyecto — si ellos lo quieren, algo raro debe tener</span></button>
+    </div>
+    <button class="btn" id="br4" disabled onclick="showReveal()">Ver resultados →</button>
+  </div>
+
+  <!-- REVELACION -->
+  <div class="screen" id="s_reveal">
+    <div class="label">La revelación</div>
+    <div class="accent"></div>
+    <div class="reveal-box">
+      <div class="reveal-pct" id="revPct"></div>
+      <p class="reveal-line" id="revLine"></p>
+    </div>
+    <div style="margin-bottom:32px;">
+      <p class="label" style="margin-bottom:16px;">Tus respuestas</p>
+      <div id="answerList"></div>
+    </div>
+    <p class="body" style="color:#555; margin-bottom:36px;">Esto es exactamente lo que vive el público en cada función de GET. La mayoría no coopera — y se siente bien con las decisiones que tomó. Esa es la trampa del show.</p>
+    <div style="padding-top:28px; border-top:1px solid #141414;">
+      <p class="body" style="margin-bottom:20px;"><strong>Queremos diseñar la integración con vos.</strong> Hablemos.</p>
+      <a href="https://wa.me/5491144361855?text=Hola%20Tomas%2C%20vi%20la%20presentaci%C3%B3n%20de%20GET%20y%20me%20interesa%20saber%20m%C3%A1s%20sobre%20las%20integraciones." target="_blank" class="btn">Hablar con Tomas Grosskopf →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+var FORMSPREE='https://formspree.io/f/myklrkzr';
+var ans={},coop={},selected={};
+var prog={s0:0,sr0:8,s1:20,s2:32,sr2:44,s3:56,sr3:66,s4:78,sr4:88,s_reveal:100};
+var qdata={r0:'Presupuesto de marca',r2:'Resultados de campaña',r3:'Esta presentación',r4:'Marca competidora'};
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  document.getElementById('pb').style.width=(prog[id]||0)+'%';
+}
+
+function pick(el,ronda,letter,isC){
+  el.closest('.opts').querySelectorAll('.opt').forEach(function(o){o.classList.remove('selected');});
+  el.classList.add('selected');
+  ans[ronda]=letter; coop[ronda]=isC;
+  var btn=document.getElementById('b'+ronda);
+  if(btn) btn.disabled=false;
+}
+
+function toggleInt(el,name){
+  if(selected[name]){ delete selected[name]; el.classList.remove('picked'); }
+  else { selected[name]=true; el.classList.add('picked'); votar(name); }
+  var btn=document.getElementById('btnSig');
+  if(btn) btn.disabled=(Object.keys(selected).length===0);
+}
+
+function votar(integracion){
+  var fd=new FormData();
+  fd.append('integracion',integracion);
+  fd.append('_subject','GET — voto: '+integracion);
+  fetch(FORMSPREE,{method:'POST',body:fd,headers:{Accept:'application/json'}}).catch(function(){});
+}
+
+function showReveal(){
+  var correct=Object.values(coop).filter(function(v){return v;}).length;
+  var pct=Math.round(72+(Math.random()*14));
+  if(correct>=3) pct=Math.round(88+(Math.random()*8));
+  document.getElementById('revPct').textContent=pct+'%';
+  document.getElementById('revLine').innerHTML=
+    'de las personas que respondieron estas preguntas <strong>tomó las mismas decisiones que vos</strong>. '+
+    'Pensaron igual. Eligieron igual. Y se sintieron bien con esas elecciones. '+
+    'Eso es exactamente lo que pasa en cada función — con 500 personas, plata real, y las reglas ocultas hasta el final.';
+  var html='';
+  ['r0','r2','r3','r4'].forEach(function(r){
+    var isW=coop[r];
+    html+='<div class="answer-row"><div class="answer-q">'+qdata[r]+' — elegiste '+(ans[r]||'?')+'</div>';
+    html+='<span class="atag '+(isW?'aw':'al')+'">'+(isW?'cooperaste':'competiste')+'</span></div>';
+  });
+  document.getElementById('answerList').innerHTML=html;
+  go('s_reveal');
+}
+</script>
+</body>
+</html>
